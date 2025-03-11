@@ -1,6 +1,8 @@
 package cz.gabzdyldaniel.data.network
 
+import cz.gabzdyldaniel.data.models.VolumesResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
@@ -22,6 +24,6 @@ class ApiService {
     }
 
     suspend fun getBooks(author: String): VolumesResponse {
-        return httpClient.get<String>("$baseUrl&inauthor:\"${author.replace(" ", "+")}\"langRestrict=cs")
+        return httpClient.get("$baseUrl&inauthor:\"${author.replace(" ", "+")}\"langRestrict=cs").body()
     }
 }
