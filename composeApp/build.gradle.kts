@@ -76,10 +76,17 @@ kotlin {
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.logging)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
+
+            // Ktor dependencies
+            implementation(libs.ktor.client.cio)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -115,6 +122,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose)
     debugImplementation(compose.uiTooling)
 }
 
