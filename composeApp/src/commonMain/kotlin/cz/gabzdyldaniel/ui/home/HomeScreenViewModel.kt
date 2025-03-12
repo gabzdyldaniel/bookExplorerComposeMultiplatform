@@ -4,30 +4,63 @@ import cz.gabzdyldaniel.data.models.Volume
 import cz.gabzdyldaniel.data.repository.BookRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HomeScreenViewModel {
-    val repository = BookRepository()
-    private val _state = MutableStateFlow<HomeScreenState>(HomeScreenState.Loading)
+    private val repository = BookRepository()
+    private val _state = MutableStateFlow<HomeScreenState>(HomeScreenState.Initial)
     val state = _state.asStateFlow()
 
+    private val viewModelScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     fun fetchBooks(author: String) {
-        CoroutineScope(Dispatchers.Main).launch {
-            _state.value = HomeScreenState.Loading
+        if (author.isBlank()) {
+            _state.value = HomeScreenState.Error("Zadejte jméno autora")
+            return
+        }
+
+        viewModelScope.launch {
             try {
-                val result = repository.fetchBooks(author)
-                _state.value = HomeScreenState.Success(result.items ?: emptyList())
+                println("ViewModel: Začínám hledat knihy")
+                _state.value = HomeScreenState.Loading
+
+                try {
+                    val result = repository.fetchBooks(author)
+                    println("ViewModel: Data získána, items=${result.items?.size}")
+
+                    val items = result.items ?: emptyList()
+                    if (items.isEmpty()) {
+                        _state.value = HomeScreenState.Success(emptyList())
+                        println("ViewModel: Prázdný seznam")
+                    } else {
+                        _state.value = HomeScreenState.Success(items)
+                        println("ViewModel: Úspěch, ${items.size} položek")
+                    }
+                } catch (e: Exception) {
+                    println("ViewModel: Chyba v repository: ${e.message}")
+                    e.printStackTrace()
+                    _state.value = HomeScreenState.Error("Chyba při načítání dat: ${e.message}")
+                }
             } catch (e: Exception) {
-                HomeScreenState.Error(e.message ?: "Unknown error")
+                println("ViewModel: Neošetřená výjimka: ${e.message}")
+                e.printStackTrace()
+                _state.value = HomeScreenState.Error("Neočekávaná chyba: ${e.message}")
             }
         }
+    }
+
+    fun onCleared() {
+        viewModelScope.cancel()
     }
 }
 
 sealed class HomeScreenState {
-    object Loading : HomeScreenState()
+    data object Initial : HomeScreenState()
+    data object Loading : HomeScreenState()
     data class Success(val data: List<Volume>) : HomeScreenState()
     data class Error(val message: String) : HomeScreenState()
 }
